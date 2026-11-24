@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="980" viewBox="0 0 1440 980" role="img" aria-labelledby="title desc">
+<title id="title">SAI ELECTRONICS deployed AWS architecture</title>
+<desc id="desc">Route 53 and ACM secure an internet-facing Application Load Balancer which forwards website traffic to a private EC2 Nginx server. Browser API calls go through API Gateway and Lambda to Aurora MySQL, with credentials from Secrets Manager. S3 stores frontend assets and CloudTrail audit logs. CloudWatch stores Lambda logs and Athena queries CloudTrail logs.</desc>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#47647f"/></marker>
+  <style>
+    .h1{font:700 30px Arial;fill:#fff}.sub{font:16px Arial;fill:#dce9f6}
+    .section{font:700 18px Arial;fill:#24415c}.node{stroke-width:2;rx:12}
+    .head{font:700 17px Arial;fill:#17324a}.body{font:14px Arial;fill:#27445e}
+    .small{font:12px Arial;fill:#48637b}.edge{stroke:#47647f;stroke-width:2.3;fill:none;marker-end:url(#arrow)}
+    .dash{stroke-dasharray:7 5}
+  </style>
+</defs>
+<rect width="1440" height="980" fill="#f5f8fc"/>
+<rect x="0" y="0" width="1440" height="84" fill="#15375b"/>
+<text x="48" y="42" class="h1">SAI ELECTRONICS</text>
+<text x="48" y="67" class="sub">AWS E-Commerce Platform | Deployed Architecture | us-east-1</text>
+
+<!-- user and DNS row -->
+<rect x="48" y="125" width="190" height="86" fill="#eaf2ff" stroke="#4c78a8" class="node"/>
+<text x="143" y="159" text-anchor="middle" class="head">Customers</text><text x="143" y="184" text-anchor="middle" class="body">Browser / HTTPS</text>
+<rect x="300" y="125" width="190" height="86" fill="#fff4df" stroke="#d69b31" class="node"/>
+<text x="395" y="159" text-anchor="middle" class="head">Amazon Route 53</text><text x="395" y="184" text-anchor="middle" class="body">saivardhan.online</text>
+<rect x="565" y="125" width="210" height="86" fill="#fce9f0" stroke="#c65b82" class="node"/>
+<text x="670" y="159" text-anchor="middle" class="head">AWS Certificate Manager</text><text x="670" y="184" text-anchor="middle" class="body">Issued TLS certificate</text>
+<path d="M238 168 H300" class="edge"/><text x="266" y="154" class="small" text-anchor="middle">DNS</text>
+<path d="M490 168 H565" class="edge"/><text x="526" y="154" class="small" text-anchor="middle">DNS alias</text>
+
+<!-- VPC boundary -->
+<rect x="48" y="270" width="900" height="540" rx="18" fill="#edf4fb" stroke="#5d8fbd" stroke-width="2.5"/>
+<text x="76" y="307" class="section">Amazon VPC — application and database network</text>
+<rect x="80" y="340" width="360" height="425" rx="14" fill="#f6fbff" stroke="#9bbbd8" stroke-width="2"/>
+<text x="104" y="373" class="section">Public subnet layer</text>
+<rect x="110" y="405" width="300" height="96" fill="#e5f4ea" stroke="#3d9b65" class="node"/>
+<text x="260" y="441" text-anchor="middle" class="head">Application Load Balancer</text>
+<text x="260" y="466" text-anchor="middle" class="body">HTTPS :443 | HTTP :80 → redirect</text>
+<rect x="110" y="535" width="300" height="66" fill="#fce9f0" stroke="#c65b82" class="node"/>
+<text x="260" y="562" text-anchor="middle" class="head">ACM certificate attached</text>
+<text x="260" y="583" text-anchor="middle" class="body">TLS termination at ALB</text>
+<path d="M260 535 V501" class="edge"/>
+<rect x="110" y="635" width="300" height="88" fill="#eaf2ff" stroke="#4c78a8" class="node"/>
+<text x="260" y="670" text-anchor="middle" class="head">ALB Target Group</text>
+<text x="260" y="696" text-anchor="middle" class="body">EC2 target | HTTP :80</text>
+<path d="M260 501 V635" class="edge"/>
+
+<rect x="475" y="340" width="440" height="425" rx="14" fill="#f7fbff" stroke="#9bbbd8" stroke-width="2"/>
+<text x="499" y="373" class="section">Private application / database layers</text>
+<rect x="520" y="410" width="350" height="100" fill="#eaf2ff" stroke="#4c78a8" class="node"/>
+<text x="695" y="446" text-anchor="middle" class="head">Amazon EC2</text>
+<text x="695" y="471" text-anchor="middle" class="body">Nginx | serves HTML / CSS / JavaScript</text>
+<text x="695" y="491" text-anchor="middle" class="small">Managed administration via Systems Manager</text>
+<path d="M410 680 C455 680 465 460 520 460" class="edge"/>
+<text x="460" y="570" class="small" transform="rotate(-75 460 570)">HTTP :80</text>
+<rect x="520" y="570" width="350" height="70" fill="#fff4df" stroke="#d69b31" class="node"/>
+<text x="695" y="599" text-anchor="middle" class="head">Amazon Aurora MySQL</text>
+<text x="695" y="622" text-anchor="middle" class="body">saielectronics | products, customers, orders, order_items</text>
+<path d="M695 510 V570" class="edge"/>
+<text x="711" y="548" class="small">SQL / DB connection</text>
+
+<!-- API path -->
+<rect x="1000" y="125" width="190" height="86" fill="#e4f5f0" stroke="#329879" class="node"/>
+<text x="1095" y="159" text-anchor="middle" class="head">Amazon API Gateway</text><text x="1095" y="184" text-anchor="middle" class="body">HTTP API</text>
+<rect x="1240" y="125" width="170" height="86" fill="#fff1e4" stroke="#d8893a" class="node"/>
+<text x="1325" y="159" text-anchor="middle" class="head">AWS Lambda</text><text x="1325" y="184" text-anchor="middle" class="body">sai-electronics-api</text>
+<path d="M775 168 H1000" class="edge"/><text x="887" y="154" class="small" text-anchor="middle">Browser API calls</text>
+<path d="M1190 168 H1240" class="edge"/>
+<path d="M1325 211 V246 H695 V410" class="edge dash"/>
+<text x="1030" y="237" class="small">VPC database access</text>
+
+<!-- secrets -->
+<rect x="1000" y="285" width="190" height="86" fill="#fce9f0" stroke="#c65b82" class="node"/>
+<text x="1095" y="319" text-anchor="middle" class="head">Secrets Manager</text><text x="1095" y="344" text-anchor="middle" class="body">Database credentials</text>
+<path d="M1190 328 H1325 V211" class="edge dash"/>
+
+<!-- S3 frontend -->
+<rect x="1000" y="420" width="190" height="86" fill="#fff4df" stroke="#d69b31" class="node"/>
+<text x="1095" y="454" text-anchor="middle" class="head">Amazon S3</text><text x="1095" y="479" text-anchor="middle" class="body">Frontend asset bucket</text>
+<path d="M1000 463 H945 V460 H870" class="edge dash"/>
+<text x="960" y="448" class="small" text-anchor="middle">S3 sync / deployment</text>
+
+<!-- monitoring and audit -->
+<rect x="1000" y="555" width="190" height="86" fill="#f2eafe" stroke="#8b68c7" class="node"/>
+<text x="1095" y="589" text-anchor="middle" class="head">Amazon CloudWatch</text><text x="1095" y="614" text-anchor="middle" class="body">Lambda execution logs</text>
+<path d="M1325 211 V535 H1190" class="edge dash"/>
+<rect x="1240" y="555" width="170" height="86" fill="#f2eafe" stroke="#8b68c7" class="node"/>
+<text x="1325" y="589" text-anchor="middle" class="head">AWS CloudTrail</text><text x="1325" y="614" text-anchor="middle" class="body">Multi-region activity</text>
+<rect x="1000" y="685" width="190" height="86" fill="#fff4df" stroke="#d69b31" class="node"/>
+<text x="1095" y="719" text-anchor="middle" class="head">Amazon S3</text><text x="1095" y="744" text-anchor="middle" class="body">CloudTrail log archive</text>
+<rect x="1240" y="685" width="170" height="86" fill="#eaf2ff" stroke="#4c78a8" class="node"/>
+<text x="1325" y="719" text-anchor="middle" class="head">Amazon Athena</text><text x="1325" y="744" text-anchor="middle" class="body">SQL audit queries</text>
+<path d="M1325 641 V685" class="edge"/><path d="M1240 728 H1190" class="edge"/>
+<rect x="1000" y="825" width="410" height="78" fill="#edf7f0" stroke="#54a46a" class="node"/>
+<text x="1205" y="857" text-anchor="middle" class="head">Athena query results — separate S3 bucket</text>
+<text x="1205" y="881" text-anchor="middle" class="body">SSE-S3 encrypted output location</text>
+<path d="M1325 771 V825" class="edge"/>
+
+<text x="48" y="865" class="small">Connection legend: solid arrows = request / data flow; dashed arrows = configuration, credentials, deployment or log flow.</text>
+<text x="48" y="891" class="small">Diagram reflects the discussed deployment: EC2/Nginx frontend, API Gateway + Lambda backend, Aurora MySQL, S3, CloudWatch, CloudTrail and Athena.</text>
+</svg>
