@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.ppk
+*.key
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+backend/package/
+backend/*.zip
+*.log
