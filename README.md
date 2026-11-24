@@ -4,104 +4,91 @@
 
 A full-stack electronics e-commerce demonstration deployed on AWS. The web frontend is served by Nginx on Amazon EC2 behind an Application Load Balancer, while application APIs run on Amazon API Gateway and AWS Lambda with an Amazon Aurora MySQL database.
 
-## Live application
+- **Live website:** https://saivardhan.online
+- **AWS Region:** `us-east-1`
 
-- Website: https://saivardhan.online
-- AWS Region: `us-east-1`
+## AWS architecture
 
-## Architecture at a glance
+![SAI ELECTRONICS AWS architecture](docs/architecture/SAI_ELECTRONICS_AWS_Architecture.svg)
 
-1. Customers resolve the website domain through Amazon Route 53.
-2. HTTPS traffic reaches the Application Load Balancer (ALB), using an AWS Certificate Manager certificate.
-3. The ALB forwards web traffic to an EC2 instance running Nginx in a private application subnet.
-4. Frontend JavaScript calls Amazon API Gateway.
-5. API Gateway invokes the `sai-electronics-api` AWS Lambda function.
-6. Lambda accesses Amazon Aurora MySQL and retrieves database credentials from AWS Secrets Manager.
-7. Frontend assets are stored in Amazon S3 and synchronized to the EC2 web root.
-8. Amazon CloudWatch collects Lambda execution logs.
-9. AWS CloudTrail records account activity and delivers audit logs to Amazon S3; Amazon Athena is used to query the CloudTrail data.
+[Open the scalable SVG architecture diagram](docs/architecture/SAI_ELECTRONICS_AWS_Architecture.svg)
 
-See the [AWS architecture diagram](docs/architecture/SAI_ELECTRONICS_AWS_Architecture.svg) and the project documentation in [docs/](docs/).
+### Main request and data flows
+
+1. Customers resolve `saivardhan.online` through Amazon Route 53.
+2. The internet-facing Application Load Balancer receives HTTPS on port 443 using an AWS Certificate Manager (ACM) certificate. HTTP port 80 redirects to HTTPS.
+3. The ALB target group forwards website requests to the private EC2 application instance.
+4. Nginx on EC2 serves the HTML, CSS and JavaScript storefront. Frontend assets are stored in Amazon S3 and synchronized to the EC2 web root.
+5. Browser JavaScript calls the Amazon API Gateway HTTP API.
+6. API Gateway invokes the `sai-electronics-api` AWS Lambda function.
+7. Lambda retrieves the database secret from AWS Secrets Manager and connects to Amazon Aurora MySQL over VPC networking.
+8. Lambda execution records are written to Amazon CloudWatch Logs.
+9. AWS CloudTrail records account activity and delivers audit files to S3. Amazon Athena queries those logs using SQL; query outputs are stored in a separate S3 bucket.
 
 ## AWS services and tools
 
-| Service | Role in the project |
+| Service | Role |
 |---|---|
 | Amazon Route 53 | Public DNS for the application domain |
-| AWS Certificate Manager (ACM) | TLS certificate used by the ALB HTTPS listener |
-| Amazon VPC | Network isolation and subnet layout |
-| Public subnets | Host the internet-facing ALB |
-| Private subnet | Hosts the application EC2 instance |
-| Application Load Balancer | Routes incoming HTTPS traffic to the web server |
-| Amazon EC2 | Hosts Nginx and the static frontend |
+| AWS Certificate Manager (ACM) | TLS certificate for the ALB HTTPS listener |
+| Amazon VPC | Network isolation and public/private subnet layout |
+| Application Load Balancer (ALB) | HTTPS entry point and routing to the web target group |
+| EC2 | Hosts the Nginx frontend server in a private application subnet |
 | Nginx | Serves the website files |
-| Amazon S3 | Stores frontend assets and CloudTrail audit logs; Athena query results use a separate bucket |
-| Amazon API Gateway | Exposes application HTTP endpoints |
-| AWS Lambda | Runs serverless application API logic |
-| Amazon Aurora MySQL | Stores customers, products, orders and order items |
-| AWS Secrets Manager | Stores database credentials for backend access |
-| Amazon CloudWatch | Stores Lambda execution logs |
-| AWS CloudTrail | Records AWS account/API activity |
-| Amazon Athena | Queries CloudTrail audit records using SQL |
-| AWS Systems Manager Session Manager | Provides managed EC2 administration access |
+| Amazon S3 | Frontend asset storage, CloudTrail log archive and separate Athena query-result storage |
+| Amazon API Gateway | Exposes the application HTTP API |
+| AWS Lambda | Serverless backend API logic |
+| Amazon Aurora MySQL | Customer, product, order and order-item database |
+| AWS Secrets Manager | Database credential storage |
+| AWS Systems Manager Session Manager | Managed EC2 administration access |
+| Amazon CloudWatch Logs | Lambda execution logging |
+| AWS CloudTrail | Multi-Region AWS account activity auditing |
+| Amazon Athena | SQL analysis of CloudTrail audit data |
 
-## Application capabilities
+## Application features
 
 - Customer registration and login
-- Electronics catalogue with 50 product entries
-- Product photos, categories, prices and stock display
-- Shopping cart
-- Order creation with stock validation and inventory updates
+- Electronics catalogue with 50 product records
+- Product photographs, categories, prices and stock display
+- Shopping cart and order creation
+- Stock validation and updates during order creation
 - Customer order history
 - UPI QR payment instructions and transaction-reference submission
 - Admin pending-payment review workflow
 
-## Order and payment workflow
+## Customer order and payment flow
 
-1. A customer browses the catalogue, signs in and adds products to the cart.
-2. The frontend submits the order request to API Gateway.
-3. Lambda validates requested products and stock against Aurora MySQL and records the order.
+1. The customer browses products, signs in and adds products to the cart.
+2. The frontend submits selected product IDs and quantities to the order API.
+3. Lambda validates customer and stock information, calculates the total using database prices, creates the order and order items, and updates product stock.
 4. The application displays UPI payment instructions and accepts a transaction reference.
-5. An administrator reviews the submitted reference and updates the payment decision through the admin workflow.
+5. An administrator reviews the submitted reference through the admin workflow.
 
-**Payment note:** A submitted UPI reference is a request for manual review, not automatic proof that funds were received. Payment should be confirmed against merchant bank/UPI records before an order is treated as paid.
+**Payment note:** A submitted UPI reference is a request for manual review, not automatic proof of funds received. Payment must be reconciled against the merchant bank/UPI record before an order is treated as paid.
 
-## Logging and audit analytics
+## Monitoring and audit analytics
 
-- Lambda execution records are available in CloudWatch Logs.
-- CloudTrail records AWS account management activity and stores log files in S3.
-- Athena provides SQL-based analysis of the CloudTrail log data.
-- Athena query results are stored in a separate S3 query-results bucket.
+- Lambda execution logs are available in CloudWatch Logs.
+- CloudTrail records AWS account management activity and stores audit files in S3.
+- An Athena table is configured for the CloudTrail dataset.
+- Athena SQL queries can inspect event time, event source, event name, Region, source IP and error code.
+- Athena query results are stored in a separate S3 bucket using SSE-S3 encryption.
 
-## Security and operational notes
+## Security and operational considerations
 
 - The website is served over HTTPS through the ALB listener and ACM certificate.
-- Database credentials are retrieved from Secrets Manager by the Lambda backend.
+- Database credentials are retrieved by Lambda from Secrets Manager.
 - EC2 administration uses Systems Manager Session Manager.
-- Customer identity and order ownership must be enforced server-side before production use. The demonstration's browser-held customer ID is not a substitute for token/session authentication and authorization.
-- Restrict CORS to the production website origin and limit administrative credentials and permissions.
-- Review AWS usage and S3 lifecycle policies regularly to control costs.
+- Customer identity and order ownership should be enforced server-side before production use; a browser-held customer ID is not a substitute for token/session authentication and authorization.
+- UPI references should be verified against merchant transaction records before payment approval.
+- Restrict CORS and administrative access to the minimum required origins and permissions.
+- Review service usage, CloudWatch log retention and S3 lifecycle policies to manage costs.
 
-## Repository layout
+## Documentation
 
-```text
-SAI-ELECTRONICS/
-├── README.md
-└── docs/
-    ├── SAI_ELECTRONICS_Final_Project_Documentation.pdf
-    ├── SAI_ELECTRONICS_Final_Project_Documentation.docx
-    ├── SAI_ELECTRONICS_Final_Handover_Pack.zip
-    └── architecture/
-        ├── SAI_ELECTRONICS_AWS_Architecture.png
-        └── SAI_ELECTRONICS_AWS_Architecture.svg
-```
-
-## Project documentation
-
-- [AWS Architecture (SVG)](docs/architecture/SAI_ELECTRONICS_AWS_Architecture.svg)
-- [Final Project Documentation (PDF)](docs/SAI_ELECTRONICS_Final_Project_Documentation.pdf)
-- [Editable Documentation (DOCX)](docs/SAI_ELECTRONICS_Final_Project_Documentation.docx)
+- [Final project documentation (Markdown)](docs/FINAL_PROJECT_DOCUMENTATION.md)
+- [AWS architecture diagram (SVG)](docs/architecture/SAI_ELECTRONICS_AWS_Architecture.svg)
 
 ---
-Project: **SAI ELECTRONICS**  
-Cloud region: **us-east-1**
+**Project:** SAI ELECTRONICS  
+**Architecture pattern:** EC2-hosted web frontend + serverless API backend + managed relational database.
